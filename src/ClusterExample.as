@@ -1,5 +1,8 @@
 package  
 {
+	import com.kelvinluck.gmaps.example.ExampleClusterMarker;
+	import com.kelvinluck.gmaps.Clusterer;
+	import com.google.maps.overlays.Marker;
 	import com.google.maps.LatLng;
 	import flash.display.StageAlign;
 	import flash.display.StageScaleMode;
@@ -20,7 +23,12 @@ package
 	public class ClusterExample extends Sprite 
 	{
 		
+		public static const NUM_RANDOM_MARKERS:int = 500;
+		
 		private var map:Map;
+		private var clusterer:Clusterer;
+		private var markers:Array;
+		private var attachedMarkers:Array;
 
 		public function ClusterExample()
 		{
@@ -42,7 +50,48 @@ package
 		private function onMapReady(event:MapEvent):void
 		{
 			map.addControl(new ZoomControl());
-			map.setCenter(new LatLng(51.32, 0), 5);
+			map.setCenter(new LatLng(51.32, 0), 3);
+			map.enableScrollWheelZoom();
+			map.addEventListener(MapZoomEvent.ZOOM_CHANGED, onMapZoomChanged);
+			addMarkers();
+			clusterer = new Clusterer(markers, map.getZoom());
+			attachedMarkers = [];
+			attachMarkers();
+		}
+		
+		private function addMarkers():void
+		{
+			markers = [];
+			var i:int = NUM_RANDOM_MARKERS;
+			while (i--) {
+				markers.push(new Marker(new LatLng(Math.random() * 160 - 80, Math.random() * 360 - 180)));
+			}
+		}
+
+		private function onMapZoomChanged(event:MapZoomEvent):void
+		{
+			clusterer.zoom = map.getZoom();
+			attachMarkers();
+		}
+		
+		private function attachMarkers():void
+		{
+			for each (var marker:Marker in attachedMarkers) {
+				map.removeOverlay(marker);
+			}
+			attachedMarkers = [];
+			var clusteredMarkers:Array = clusterer.clusters;
+			
+			for each (var cluster:Array in clusteredMarkers) {
+				if (cluster.length == 1) {
+					// there is only a single marker in this cluster
+					marker = cluster[0];
+				} else {
+					marker = new ExampleClusterMarker(cluster);
+				}
+				map.addOverlay(marker);
+				attachedMarkers.push(marker);
+			}
 		}
 	}
 }
