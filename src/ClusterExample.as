@@ -1,5 +1,6 @@
 package  
 {
+	import com.kelvinluck.gmaps.example.CapitalCity;
 	import com.kelvinluck.gmaps.example.ExampleClusterMarker;
 	import com.kelvinluck.gmaps.Clusterer;
 	import com.google.maps.overlays.Marker;
@@ -22,8 +23,6 @@ package
 	 */
 	public class ClusterExample extends Sprite 
 	{
-		
-		public static const NUM_RANDOM_MARKERS:int = 500;
 		
 		private var map:Map;
 		private var clusterer:Clusterer;
@@ -62,9 +61,9 @@ package
 		private function addMarkers():void
 		{
 			markers = [];
-			var i:int = NUM_RANDOM_MARKERS;
-			while (i--) {
-				markers.push(new Marker(new LatLng(Math.random() * 160 - 80, Math.random() * 360 - 180)));
+			var capitals:Array = CapitalCity.getCapitals();
+			for each (var capital:CapitalCity in capitals) {
+				markers.push(new Marker(capital.location));
 			}
 		}
 
