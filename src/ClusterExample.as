@@ -54,7 +54,7 @@ package
 			map.enableScrollWheelZoom();
 			map.addEventListener(MapZoomEvent.ZOOM_CHANGED, onMapZoomChanged);
 			addMarkers();
-			clusterer = new Clusterer(markers, map.getZoom());
+			clusterer = new Clusterer(markers, map.getZoom(), 30);
 			attachedMarkers = [];
 			attachMarkers();
 		}
