@@ -1,18 +1,19 @@
 package  
 {
-	import com.kelvinluck.gmaps.example.CapitalCity;
-	import com.kelvinluck.gmaps.example.ExampleClusterMarker;
-	import com.kelvinluck.gmaps.Clusterer;
-	import com.google.maps.overlays.Marker;
 	import com.google.maps.LatLng;
-	import flash.display.StageAlign;
-	import flash.display.StageScaleMode;
-	import com.google.maps.controls.ZoomControl;
 	import com.google.maps.Map;
 	import com.google.maps.MapEvent;
 	import com.google.maps.MapZoomEvent;
+	import com.google.maps.controls.ZoomControl;
+	import com.google.maps.overlays.Marker;
+	import com.kelvinluck.gmaps.Clusterer;
+	import com.kelvinluck.gmaps.example.CapitalCity;
+	import com.kelvinluck.gmaps.example.ExampleClusterMarker;
+	import com.kelvinluck.gmaps.example.ExampleSingleMarker;
 
 	import flash.display.Sprite;
+	import flash.display.StageAlign;
+	import flash.display.StageScaleMode;
 	import flash.geom.Point;
 
 	/**
@@ -63,7 +64,7 @@ package
 			markers = [];
 			var capitals:Array = CapitalCity.getCapitals();
 			for each (var capital:CapitalCity in capitals) {
-				markers.push(new Marker(capital.location));
+				markers.push(new ExampleSingleMarker(capital.location));
 			}
 		}
 
