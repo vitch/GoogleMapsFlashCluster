@@ -1,23 +1,20 @@
-package com.kelvinluck.gmaps 
-{
-	import com.google.maps.overlays.Marker;
-
+package com.kelvinluck.gmaps {
 	import flash.geom.Point;
-	import flash.utils.Dictionary;
 
 	/**
 	 * Distance based clustering solution for google maps markers.
-	 * 
-	 * <p>Algorithm based on Mika Tuupola's "Introduction to Marker 
+	 *
+	 * <p>Algorithm based on Mika Tuupola's "Introduction to Marker
 	 * Clustering With Google Maps" adapted for use in a dynamic
 	 * flash map.</p>
-	 * 
+	 *
 	 * @author Kelvin Luck
+	 * @author Christoph Polcin - speedup calculateClusters
 	 * @see http://www.appelsiini.net/2008/11/introduction-to-marker-clustering-with-google-maps
 	 */
-	public class Clusterer 
+	public class Clusterer
 	{
-		
+
 		public static const DEFAULT_CLUSTER_RADIUS:int = 25;
 
 		private var _clusters:Array;
@@ -30,17 +27,16 @@ package com.kelvinluck.gmaps
 			return _clusters;
 		}
 
-		private var _markers:Array;
 		public function set markers(value:Array):void
 		{
-			if (value != _markers) {
-				_markers = value;
-				_positionedMarkers = [];
-				for each (var marker:Marker in value) {
-					_positionedMarkers.push(new PositionedMarker(marker));
-				}
-				_invalidated = true;
-			}
+			var i:int = -1,
+				l:int = value.length;
+
+			_positionedMarkers = new Vector.<PositionedMarker>(l);
+			while(++i<l)
+				_positionedMarkers[i] = new PositionedMarker( value[i] );
+
+			_invalidated = true;
 		}
 
 		private var _zoom:int;
@@ -62,7 +58,7 @@ package com.kelvinluck.gmaps
 		}
 
 		private var _invalidated:Boolean;
-		private var _positionedMarkers:Array;
+		private var _positionedMarkers:Vector.<PositionedMarker>;
 
 		public function Clusterer(markers:Array, zoom:int, clusterRadius:int = DEFAULT_CLUSTER_RADIUS)
 		{
@@ -74,90 +70,69 @@ package com.kelvinluck.gmaps
 
 		private function calculateClusters():Array
 		{
-			var positionedMarkers:Dictionary = new Dictionary();
-			var positionedMarker:PositionedMarker;
-			for each (positionedMarker in _positionedMarkers) {
-				positionedMarkers[positionedMarker.id] = positionedMarker;
-			}
-			
-			// Rather than taking a sqaure root and dividing by a power of 2 to calculate every distance we
-			// do the calculation once here (backwards).
-			var compareDistance:Number = Math.pow(_clusterRadius * Math.pow(2, 21 - _zoom), 2);
-			
-			var clusters:Array = [];
-			var cluster:Array;
-			var p1:Point;
-			var p2:Point;
-			var x:int;
-			var y:int;
-			var compareMarker:PositionedMarker;
-			for each (positionedMarker in positionedMarkers) {
-				if (positionedMarker == null) {
-					continue;
-				}
-				positionedMarkers[positionedMarker.id] = null;
-				cluster = [positionedMarker.marker];
-				for each (compareMarker in positionedMarkers) {
-					if (compareMarker == null) {
+			var clusterMArAr : Array = [],
+				om : PositionedMarker,
+				cm : PositionedMarker,
+				// Rather than taking a sqaure root and dividing by a power of 2 to calculate every distance we
+				// do the calculation once here (backwards).
+				compareDistance : Number = Math.pow(_clusterRadius * Math.pow(2, 21 - _zoom), 2),
+				clusterMAr : Array,
+				p1 : Point,
+				p2 : Point,
+				x : int,
+				y : int,
+				i:int = -1,
+				j:int,
+				l:int = _positionedMarkers.length,
+				doneV : Vector.<int> = new Vector.<int>(l);
+
+				while(++i < l) {
+					if(doneV[i])
 						continue;
+
+					om = _positionedMarkers[i];
+
+					doneV[i] = 1;
+					clusterMAr = [om.marker];
+					j = i;
+					while(++j < l) {
+						if(doneV[j])
+							continue;
+
+						cm = _positionedMarkers[j];
+
+						p1 = om.point;
+						p2 = cm.point;
+						x = p1.x - p2.x;
+						y = p1.y - p2.y;
+						if (x * x + y * y < compareDistance) {
+							clusterMAr.push(cm.marker);
+							doneV[j] = 1;
+						}
 					}
-					p1 = positionedMarker.point;
-					p2 = compareMarker.point;
-					x = p1.x - p2.x;
-					y = p1.y - p2.y;
-					if (x * x + y * y < compareDistance) {
-						cluster.push(compareMarker.marker);
-						positionedMarkers[compareMarker.id] = null;
-					}
+					clusterMArAr.push(clusterMAr);
 				}
-				clusters.push(cluster);
-			}
-			return clusters;
+
+			return clusterMArAr;
 		}
 	}
 }
 
-import com.google.maps.LatLng;
 import com.google.maps.overlays.Marker;
 
 import flash.geom.Point;
 
-internal class PositionedMarker
+final internal class PositionedMarker
 {
-
-	public static const OFFSET:int = 268435456;
-	public static const RADIUS:Number = OFFSET / Math.PI;
-	
-	// public properties are quicker than getters - speed is important here...
-	public var position:LatLng;
 	public var point:Point;
-
-	private var _marker:Marker;
-	public function get marker():Marker
-	{
-		return _marker;
-	}
-
-	private var _id:int;
-	public function get id():int
-	{
-		return _id;
-	}
-
-	private static var globalId:int = 0;
+	public var marker:Marker;
 
 	public function PositionedMarker(marker:Marker)
 	{
-		_marker = marker;
-		_id = globalId++;
-		position = marker.getLatLng();
-		
-		var o:int = OFFSET;
-		var r:Number = RADIUS;
-		var d:Number = Math.PI / 180;
-		var x:int = Math.round(o + r * position.lng() * d);
-		var lat:Number = position.lat();
-		var y:int = Math.round(o - r * Math.log((1 + Math.sin(lat * d)) / (1 - Math.sin(lat * d))) / 2);
-		point = new Point(x, y);
+		this.marker = marker;
+
+		with(marker.getLatLng()){
+			point = new Point(Math.round(268435456 /*off*/ + 85445659.44705395 /* rad = off / pi */ * lng() * 0.017453292519943295) /* long to X */, Math.round(268435456 /*off*/ - 85445659.44705395 /* rad = off / pi */ * Math.log((1 + Math.sin(lat() * 0.017453292519943295)) / (1 - Math.sin(lat() * 0.017453292519943295))) / 2)/* lat to Y */);
+		}
 	}
 }
